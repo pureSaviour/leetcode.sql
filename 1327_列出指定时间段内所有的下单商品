@@ -1,0 +1,48 @@
+-- Active: 1775904001568@@127.0.0.1@5432
+CREATE SCHEMA _1327;
+SET search_path TO _1327;
+CREATE TABLE Products(
+    product_id SERIAL PRIMARY KEY,
+    product_name VARCHAR(255) NOT NULL UNIQUE,
+    product_category VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE Orders(
+    product_id INT,
+    order_date DATE NOT NULL,
+    unit INT NOT NULL
+);
+
+INSERT INTO Products 
+(product_name, product_category)
+SELECT
+    (ARRAY['Leetcode Solutions','Jewels of Stringology','HP','Lenovo','Leetcode Kit'])[(n)],
+    (ARRAY['Book','Laptop','T-shirt'])[FLOOR(RANDOM()*3 + 1)]
+    FROM generate_series(1, 5) AS n
+;
+
+
+INSERT INTO Orders
+(product_id, order_date, unit)
+SELECT
+    FLOOR(RANDOM() * 5 + 1) AS id,
+    ('2020-01-01'::DATE + (RANDOM() * ('2020-07-01'::DATE - '2020-01-01'::DATE))::INT)::DATE,
+    RANDOM() * 500 + 1
+    FROM generate_series(1, 100)
+    ORDER BY id
+;
+SELECT * FROM Products;
+SELECT * FROM Orders;
+
+SELECT 
+    p.product_name,
+    SUM(o.unit) AS unit
+FROM Orders o
+JOIN Products p
+    ON p.product_id = o.product_id
+WHERE o.order_date BETWEEN '2020-02-01' AND '2020-02-29'
+GROUP BY o.product_id,p.product_name
+HAVING SUM(o.unit) >= 800;              --原题这里要求大于100，这里由于数据量过大，稍作调整
+
+SELECT pg_size_pretty(pg_total_relation_size('Orders'))
+

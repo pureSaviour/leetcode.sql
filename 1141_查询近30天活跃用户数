@@ -1,0 +1,42 @@
+
+CREATE SCHEMA _1141;
+SET search_path TO _1141;
+
+CREATE TYPE activity_type_enum AS ENUM('open_session','end_session','scroll_down','send_message');
+CREATE TABLE Activity(
+    user_id INT NOT NULL,
+    session_id INT NOT NULL,
+    activity_date DATE NOT NULL,
+    activity_type activity_type_enum NOT NULL
+);
+
+INSERT INTO Activity
+(user_id, session_id, activity_date, activity_type)
+SELECT
+    u.user_id,
+    u.session_id,  -- 同一个会话，ID固定
+    u.activity_date,
+    -- 为每个会话生成一组行为：open → 动作 → end
+    unnest(
+        CASE FLOOR(RANDOM() * 3 + 1)::INT
+            WHEN 1 THEN (ARRAY['open_session','scroll_down','end_session']::activity_type_enum[])
+            WHEN 2 THEN (ARRAY['open_session','send_message','end_session']::activity_type_enum[])
+            WHEN 3 THEN (ARRAY['open_session','end_session']::activity_type_enum[])   
+        END 
+    ) AS activity_type
+FROM (
+    SELECT
+        generate_series(1, 10) AS user_id,  -- 4个用户
+        (random() * 20)::INT AS session_id,  -- 随机session_id
+        ('2019-08-15'::DATE - FLOOR(RANDOM() * 100)::INT) AS activity_date
+    FROM generate_series(1,10)
+) u
+ORDER BY u.user_id;
+
+
+SELECT 
+activity_date AS day,
+count(DISTINCT user_id) AS active_users
+FROM Activity
+WHERE activity_date <= '2019-07-27' AND activity_date > '2019-07-27'::DATE - 30
+GROUP BY day;
